@@ -170,7 +170,7 @@ if(isFollowing){
   }
 }
 
-
+// geting all the following list
 export const followingList=async (req,res)=>{
   try {
     const result=await User.findById(req.userId)
@@ -180,7 +180,7 @@ export const followingList=async (req,res)=>{
   }
 }
 
-
+// search function
 export const search=async (req,res)=>{
   try {
     const keyWord=req.query.keyword
@@ -203,6 +203,7 @@ export const search=async (req,res)=>{
   }
 }
 
+//getting all the notification
 export const getAllNotification=async (req,res)=>{
   try {
     const notifications=await Notification.find({
@@ -214,6 +215,8 @@ export const getAllNotification=async (req,res)=>{
   }
 }
 
+
+//seeing the notification
 export const markAsRead=async (req,res)=>{
   try {
     const {notificationId}=req.body

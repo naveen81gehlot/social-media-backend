@@ -33,7 +33,11 @@ export const uploadPost = async (req,res)=>{
          await user.save()
         
     const populatedPost = await Post.findById(post._id).populate("author","name userName profileImage")
-        return res.status(201).json(populatedPost)
+    
+    // Emit socket event so all users see the new post immediately
+    io.emit("newPost", populatedPost)
+    
+    return res.status(201).json(populatedPost)
 } catch (error) {
     console.log(error);
     
@@ -142,8 +146,8 @@ export const comment = async (req,res)=>{
 
         await post.save()
         await post.populate("author","name userName profileImage");
-        (await post.populate("comments.author", "name userName profileImage"));
-            //this is the commnet event
+        await post.populate("comments.author", "name userName profileImage");
+            //this is the comment event
          io.emit("commentedPost",{
             postId:post._id,
             comments:post.comments
@@ -193,10 +197,60 @@ export const saved = async (req, res) => {
     { path: "comments.author", select: "name userName profileImage" }
   ]
 });
+    
+    // Emit socket event so all users see bookmark changes immediately
+    io.emit("postSaved", { 
+      postId, 
+      userId: req.userId,
+      isSaved: !alreadySaved 
+    });
+    
     return res.status(200).json(user);
   } catch (error) {
     console.error("Error in savedPost:", error);
     return res.status(500).json({ message: "Error in saved post" });
+  }
+};
+
+// for delete post
+export const deletePost = async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    
+    // Find the post and check if it exists
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    // Check if the user is the author of the post
+    if (post.author.toString() !== req.userId.toString()) {
+      return res.status(403).json({ message: "You can only delete your own posts" });
+    }
+
+    // Remove the post from the author's posts array
+    const author = await User.findById(req.userId);
+    if (author) {
+      author.posts = author.posts.filter(id => id.toString() !== postId);
+      await author.save();
+    }
+
+    // Remove the post from all users' saved arrays
+    await User.updateMany(
+      { saved: postId },
+      { $pull: { saved: postId } }
+    );
+
+    // Delete the post
+    await Post.findByIdAndDelete(postId);
+
+    // Emit socket event to notify all clients about the deleted post
+    io.emit("postDeleted", { postId });
+
+    return res.status(200).json({ message: "Post deleted successfully" });
+  } catch (error) {
+    console.error("Error in deletePost:", error);
+    return res.status(500).json({ message: "Error deleting post" });
   }
 };
 

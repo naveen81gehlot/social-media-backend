@@ -1,6 +1,7 @@
 import User from "../models/user.model.js"
 import Story from "../models/story.model.js"
 import uploadOnCloudinary from '../config/cloudinary.js'
+import { io } from '../socket.js';
 
 //uploading the sotry
 export const uploadStory = async (req,res)=>{
@@ -31,6 +32,9 @@ export const uploadStory = async (req,res)=>{
         //populating the story and there viewers
         const populatedStory = await Story.findById(story._id).
         populate("author" ,"name userName profileImage").populate("viewers" ,"name userName profileImage")
+
+        // Emit socket event so followers can see the new story immediately
+        io.emit("newStory", populatedStory)
 
         return res.status(200).json(populatedStory)
     } catch (error) {
