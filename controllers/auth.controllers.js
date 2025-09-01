@@ -123,8 +123,8 @@ const user = await User.findOne({
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 10 * 365 * 24 * 60 * 60 * 1000, //10years
-      secure: false,
-      sameSite: "Strict",
+      secure: true,
+      sameSite: "none",
     });
 
     // Return user without password
