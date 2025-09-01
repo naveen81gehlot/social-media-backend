@@ -120,11 +120,12 @@ const user = await User.findOne({
     //generating the token and saving in the cookie
     const token = await genToken(user._id);
 
+    // yaha change kiya he deploye time
     res.cookie("token", token, {
       httpOnly: true,
       maxAge: 10 * 365 * 24 * 60 * 60 * 1000, //10years
-      secure: true,
-      sameSite: "none",
+       secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     });
 
     // Return user without password
